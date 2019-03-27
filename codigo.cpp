@@ -168,6 +168,42 @@ public:
 		trafficLight = GREEN;
 		return 0;
 	}
+
+	void remove(int index){
+		//LOCKING OPERATIONS ON SHARED MEMORY
+		trafficLight = RED;
+
+		Node *node = &buffer[index];
+		//Extract the index position where this node are living
+		int nodeIndex = node->getindex();
+
+		if(node == this->top){
+			this->top = node->getPrev();
+			node->getPrev()->setNext(0);
+			node->setPrev(0);
+		}
+		else if(node == this->base){
+			this->base = node->getNext();
+			this->base->setPrev(0);
+			node->setNext(0);
+		}
+		else{
+			Node *next = node->getNext();
+			Node *prev = node->getPrev();
+
+			prev->setNext(next);
+			next->setPrev(prev);
+
+			node->setNext(0);
+			node->setPrev(0);
+		}
+
+		//Setting index as diponible
+		freeIndex.push_back(nodeIndex);
+
+		//UNLOCKING OPERATIONS ON SHARED MEMORY
+		trafficLight = GREEN;
+	}
 	
 	void test(){
 		cout<<buffer[0].get()<<endl;
