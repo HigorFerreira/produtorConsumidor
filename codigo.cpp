@@ -12,11 +12,13 @@ int Rand(){
 
 class Node{
 	int *num;
+	int *index;
 	Node *prev;
 	Node *next;
 	
 	void alocate(){
 		this->num = new int;
+		this->index = new int;
 		this->prev = 0;
 		this->next = 0;
 	}
@@ -59,6 +61,14 @@ public:
 	
 	Node *getPrev(){
 		return this->prev;
+	}
+
+	void setindex(int index){
+		*this->index = index;
+	}
+
+	int getindex(){
+		return *this->index;
 	}
 };
 
@@ -111,14 +121,46 @@ public:
 		//LOCKING OPERATIONS ON SHARED MEMORY
 		trafficLight = RED;
 		
-		if(this->base == 0 && this->top == 0){
+		if(!(this->base == 0 && this->top == 0)){
+			Node *temp = base;
+			while((node->get() > temp->get()) && temp != top){
+				temp = temp->getNext();
+			}
+			Node *prev = temp->getPrev();
+			Node *next = temp->getNext();
+
+			if(prev == 0){
+				temp->setPrev(node);
+				node->setNext(temp);
+				this->base = node;
+			}
+			else if(next == 0){
+				node->setNext(temp);
+				node->setPrev(prev);
+
+				prev->setNext(node);
+				temp->setPrev(node);
+			}
+			else{
+				prev->setNext(node);
+				node->setPrev(prev);
+
+				node->setNext(temp);
+				temp->setPrev(node);
+			}
+		}
+
+		//Buffer insertion
+		if(freeIndex.empty()){
+			node->setindex(bufferCounter);
 			buffer[bufferCounter] = *node;
 			bufferCounter++;
 		}
 		else{
-
+			node->setindex(freeIndex.at(0));
+			buffer[freeIndex.at(0)] = *node;
+			freeIndex.erase(freeIndex.begin());
 		}
-		
 		
 		//UNLOCKING OPERATIONS ON SHARED MEMORY
 		trafficLight = GREEN;
