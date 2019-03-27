@@ -126,26 +126,27 @@ public:
 			while((node->get() > temp->get()) && temp != top){
 				temp = temp->getNext();
 			}
-			Node *prev = temp->getPrev();
-			Node *next = temp->getNext();
+			
+			Node *prev = new Node;
+			if(temp != 0) prev = temp->getPrev();
+			// Node *next = temp->getNext();
 
-			if(prev == 0){
+			
+			if(temp == 0){
+				this->top->setNext(node);
+				node->setPrev(top);
+				this->top = node;
+			}
+			else if(prev == 0){
 				temp->setPrev(node);
 				node->setNext(temp);
 				this->base = node;
 			}
-			else if(next == 0){
-				node->setNext(temp);
-				node->setPrev(prev);
-
-				prev->setNext(node);
-				temp->setPrev(node);
-			}
 			else{
-				prev->setNext(node);
+				node->setNext(temp);
 				node->setPrev(prev);
 
-				node->setNext(temp);
+				prev->setNext(node);
 				temp->setPrev(node);
 			}
 		}
@@ -162,10 +163,10 @@ public:
 			freeIndex.erase(freeIndex.begin());
 		}
 		
+		delete node;
 		//UNLOCKING OPERATIONS ON SHARED MEMORY
 		trafficLight = GREEN;
 		return 0;
-		delete node;
 	}
 	
 	void test(){
@@ -181,4 +182,6 @@ int main(){
 	
 	lista.insert(a);
 	lista.test();
+	
+	while(true);
 }
