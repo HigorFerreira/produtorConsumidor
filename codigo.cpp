@@ -204,6 +204,19 @@ public:
 		//UNLOCKING OPERATIONS ON SHARED MEMORY
 		trafficLight = GREEN;
 	}
+
+	int find(int num){
+		Node *node = this->base;
+		while(node != 0){
+			if(node->get() == num){
+				return node->getindex();
+			}
+
+			node = node->getNext();
+		}
+
+		return -1;
+	}
 	
 	void test(){
 		cout<<buffer[0].get()<<endl;
