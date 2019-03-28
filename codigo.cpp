@@ -6,11 +6,19 @@
 #include<sys/shm.h>
 #include<sys/stat.h>
 #include<vector>
+#include<unistd.h>
 
 using namespace std;
 
+int maxRand = 30;
+
 int Rand(){
-	return rand() % 1024;
+	return rand() % maxRand + 1;
+}
+
+int Srand(int i){
+	srand(i);
+	return rand() % maxRand + 1;
 }
 
 class Node{
@@ -79,19 +87,10 @@ class List{
 	
 	Node *base, *top;
 	
-	//Shared memory segment identifier
-	int segment_id;
 	//Shared memory pointer
 	Node *buffer;
 	
 	vector<int> freeIndex;
-	
-	//Traffic light constants
-	static const bool RED = 0;
-	static const bool GREEN = 1;
-	
-	//TrafficLight
-	bool trafficLight = RED;
 	
 	//Buffer size const	
 	static const int BUFFER_SIZE = 0xA2C3;
@@ -99,6 +98,16 @@ class List{
 	int bufferCounter = 0;
 	
 public:
+	//Shared memory segment identifier
+	int segment_id;
+
+	//Traffic light constants
+	static const bool RED = 0;
+	static const bool GREEN = 1;
+	
+	//TrafficLight
+	bool trafficLight = RED;
+
 	List(){
 		this->base = this->top = 0;
 		
@@ -122,7 +131,7 @@ public:
 		if(bufferCounter > BUFFER_SIZE) return -1;
 
 		//LOCKING OPERATIONS ON SHARED MEMORY
-		trafficLight = RED;
+		// trafficLight = RED;
 		
 		if(!(this->base == 0 && this->top == 0)){
 			Node *temp = base;
@@ -168,13 +177,14 @@ public:
 		
 		delete node;
 		//UNLOCKING OPERATIONS ON SHARED MEMORY
-		trafficLight = GREEN;
+		// trafficLight = GREEN;
 		return 0;
 	}
 
 	void remove(int index){
+
 		//LOCKING OPERATIONS ON SHARED MEMORY
-		trafficLight = RED;
+		// trafficLight = RED;
 
 		Node *node = &buffer[index];
 		//Extract the index position where this node are living
@@ -205,10 +215,11 @@ public:
 		freeIndex.push_back(nodeIndex);
 
 		//UNLOCKING OPERATIONS ON SHARED MEMORY
-		trafficLight = GREEN;
+		// trafficLight = GREEN;
 	}
 
 	int find(int num){
+
 		Node *node = this->base;
 		while(node != 0){
 			if(node->get() == num){
@@ -220,6 +231,11 @@ public:
 
 		return -1;
 	}
+
+	int getNodeValue(int index){
+		Node *pt = &buffer[index];
+		return pt->get();
+	}
 	
 	void test(){
 		cout<<buffer[0].get()<<endl;
@@ -230,17 +246,56 @@ public:
 int main(){
 	List list;
 	
-	while(true){
-		int *randNum = new int;
-		*randNum = Rand();
-		Node *node = new Node(Rand());
-		if(!(list.insert(node) < 0)){
-			cout<<*randNum<<" foi adicionado a lista\n";
-			delete randNum;
+	int pid = fork();
+	if(pid < 0){
+		cout<<endl<<"Erro na criacao de processos filhos"<<endl<<endl;
+	}
+	else if(pid > 0){
+		Node *buffer = (Node *) shmat(list.segment_id, NULL, 0);
+		while(true){
+			int *randNum = new int;
+			*randNum = Srand(pid);
+
+			cout<<endl<<"Searching by: "<<*randNum<<endl;
+			int nodeFounded = list.find(*randNum);
+
+			if(nodeFounded > -1){
+				cout<<*randNum<<" Was founded"<<endl;
+				while(true){
+					if(list.trafficLight == List::GREEN){
+						
+						list.trafficLight = List::RED;
+
+						int valueToInsert = 2*list.getNodeValue(nodeFounded);
+						list.remove(nodeFounded);
+						
+						cout<<"Reinserting "<<valueToInsert<<endl;
+						Node *node = new Node(valueToInsert);
+						list.insert(node);
+						cout<<valueToInsert<<" Reinserted"<<endl;
+						cout<<"============================\n\n";
+
+						list.trafficLight = List::GREEN;
+					}
+				}
+			}
+
+			for(long i = 0; i < 0xffffffff; i++);
 		}
-		else{
-			cout<<"Memoria insuficiente\n";
+	}
+	else{
+		while(true){
+			int *randNum = new int;
+			*randNum = Rand();
+			Node *node = new Node(Rand());
+			if(!(list.insert(node) < 0)){
+				cout<<*randNum<<" foi adicionado a lista\n";
+				delete randNum;
+			}
+			else{
+				cout<<"Memoria insuficiente\n";
+			}
+			for(long i = 0; i < 0x28ffffff; i++);
 		}
-		for(long i = 0; i < 0x28ffffff; i++);
 	}
 }
