@@ -1,3 +1,6 @@
+// Aplicação cliente servidor e memoria compartilhada.
+// Higor Ferreira 2019
+
 #include<iostream>
 #include<stdlib.h>
 #include<sys/shm.h>
@@ -225,12 +228,19 @@ public:
 };
 
 int main(){
-	List lista;
+	List list;
 	
-	Node *a = new Node(5);
-	
-	lista.insert(a);
-	lista.test();
-	
-	while(true);
+	while(true){
+		int *randNum = new int;
+		*randNum = Rand();
+		Node *node = new Node(Rand());
+		if(!(list.insert(node) < 0)){
+			cout<<*randNum<<" foi adicionado a lista\n";
+			delete randNum;
+		}
+		else{
+			cout<<"Memoria insuficiente\n";
+		}
+		for(long i = 0; i < 0x28ffffff; i++);
+	}
 }
